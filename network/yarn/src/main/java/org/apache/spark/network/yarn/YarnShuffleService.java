@@ -26,6 +26,8 @@ import com.google.common.collect.Lists;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.server.api.*;
+import org.apache.hadoop.util.DiskChecker;
+import static org.apache.hadoop.util.DiskChecker.DiskErrorException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -194,6 +196,15 @@ public class YarnShuffleService extends AuxiliaryService {
       File f = new File(dir, "registeredExecutors.ldb");
       if (f.exists()) {
         return f;
+      }
+    }
+    // Check disk and create registeredExecutors.ldb on valid local dir
+    for (String dir: localDirs) {
+      try {
+        DiskChecker.checkDir(new File(dir));
+        return new File(dir, "registeredExecutors.ldb");
+      } catch (DiskErrorException e) {
+        logger.warn("Local disk {} not available", dir, e);
       }
     }
     return new File(localDirs[0], "registeredExecutors.ldb");
